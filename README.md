@@ -8,6 +8,8 @@ A DSH (DeepSeek Harness) skill that diagnoses **live, broken clusters**, not man
 
 [![powered by dsh](https://img.shields.io/badge/powered_by-dsh-4D6BFE?style=flat-square&logo=deepseek&logoColor=white)](https://github.com/deepseek-ai/deepseek-harness)
 [![License](https://img.shields.io/badge/License-Apache%202.0-yellow.svg)](LICENSE)
+[![Listed: awesome-deepseek-harness](https://img.shields.io/badge/listed_in-awesome--deepseek--harness-4D6BFE)](https://github.com/Dominic789654/awesome-deepseek-harness)
+[![Listed: Awesome-DeepSeek-Harness-Plugins](https://img.shields.io/badge/listed_in-Awesome--DeepSeek--Harness-Plugins-4D6BFE)](https://github.com/Zhiyuan-Fan/Awesome-DeepSeek-Harness-Plugins)
 
 ## Install (30 seconds)
 
