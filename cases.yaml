@@ -1,0 +1,41 @@
+# dsh-k8s-diagnosis — cases.yaml 初始示例
+
+> 状态说明：以下为**示例条目**（基于 Kubernetes 官方文档与社区公认故障模式编写），
+> 尚未在本项目环境逐条验证。验证通过前保持 `verification: pending`；验证一个改一个。
+> 本文件的真实价值来自**你自己/你团队排障后追加的记录**（用 `scripts/record-case.sh`）。
+
+- id: case-demo-001
+  recorded_at: 2026-08-16T00:00:00Z  # 示例占位时间戳
+  symptom: "pod CrashLoopBackOff after image tag moved from v1.2.0 to :latest"
+  signals:
+    - "restartCount=12"
+    - "previous log: panic: required config not found"
+    - "events: BackOff"
+  root_cause: "unpinned :latest tag pulled a breaking change; required config not mounted"
+  fix: "pin image digest; add config volume; rollout restart"
+  verification: "pending  # 示例条目，待真实验证"
+  tags: [crashloop, image-tag, config]
+
+- id: case-demo-002
+  recorded_at: 2026-08-16T00:00:00Z
+  symptom: "container OOMKilled every ~30 min, restart loop"
+  signals:
+    - "lastState.terminated.reason=OOMKilled"
+    - "kubectl top pod usage ≈ limit for hours"
+    - "events: OOMKilling"
+  root_cause: "memory limit set too low for steady-state usage"
+  fix: "raise memory limit with headroom; monitor trend for leak"
+  verification: "pending  # 示例条目，待真实验证"
+  tags: [oom, memory-limit]
+
+- id: case-demo-003
+  recorded_at: 2026-08-16T00:00:00Z
+  symptom: "service unreachable from pod, but endpoints show IPs"
+  signals:
+    - "endpoints: 2 IPs, all ready"
+    - "nslookup from pod resolves"
+    - "NetworkPolicy exists in namespace"
+  root_cause: "NetworkPolicy denied ingress from client pod namespace"
+  fix: "adjust policy selector/ports; re-verify with policy restored (not just removed)"
+  verification: "pending  # 示例条目，待真实验证"
+  tags: [network, netpol, service]
