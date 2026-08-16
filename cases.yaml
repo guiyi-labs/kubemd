@@ -1,11 +1,74 @@
-# dsh-k8s-diagnosis — cases.yaml 初始示例
+# dsh-k8s-diagnosis — cases.yaml（案例库）
+#
+# 条目来源两类：
+#   verified  —— 本仓库 verification-report.md 真实故障注入验证案例（kind v1.36.1）
+#   community —— 社区公开故障模式（非本项目环境验证，标注 demo）
+# 真实使用：团队排障后追加（scripts/record-case.sh），verified 条目数会随实战增长。
 
-> 状态说明：以下为**示例条目**（基于 Kubernetes 官方文档与社区公认故障模式编写），
-> 尚未在本项目环境逐条验证。验证通过前保持 `verification: pending`；验证一个改一个。
-> 本文件的真实价值来自**你自己/你团队排障后追加的记录**（用 `scripts/record-case.sh`）。
+# ---- verified：来自 verification-report.md（kind v1.36.1 实测） ----
+
+- id: case-verify-001
+  recorded_at: 2026-08-16T00:00:00Z
+  symptom: "pod CrashLoopBackOff (restarts=6) after deployment of crash-app"
+  signals:
+    - "restartCount=6"
+    - "previous log: app starting... fatal: unable to read config.json: no such file or directory"
+    - "events: Warning BackOff ... Back-off restarting failed container"
+  root_cause: "app fails at startup — required config file not present (crash loop, not probe kill)"
+  fix: "mount the config volume / fix entrypoint; verify restartCount stops growing"
+  verification: "VERIFIED (verification-report.md §1.1)"
+  tags: [crashloop, config, startup]
+
+- id: case-verify-002
+  recorded_at: 2026-08-16T00:00:00Z
+  symptom: "container OOMKilled, exit 137, restarts=6 (oom-app, limit=32Mi, alloc 256Mi)"
+  signals:
+    - "lastState.terminated.reason=OOMKilled"
+    - "lastState.terminated.exitCode=137"
+    - "events: BackOff (NOTE: NO OOMKilling event on kind/containerd v2)"
+  root_cause: "memory limit (32Mi) far below workload allocation (256Mi)"
+  fix: "raise memory limit to steady-state usage + headroom; monitor for leak"
+  verification: "VERIFIED (verification-report.md §1.2)"
+  tags: [oom, memory-limit]
+
+- id: case-verify-003
+  recorded_at: 2026-08-16T00:00:00Z
+  symptom: "ImagePullBackOff for registry.invalid/nope:v9"
+  signals:
+    - "events: Failed to pull image ... failed to resolve ... no such host"
+    - "state.waiting.reason=ImagePullBackOff"
+  root_cause: "image registry host unreachable / tag nonexistent"
+  fix: "correct image registry + tag, or fix registry DNS/auth"
+  verification: "VERIFIED (verification-report.md §1.6)"
+  tags: [imagepull, registry]
+
+- id: case-verify-004
+  recorded_at: 2026-08-16T00:00:00Z
+  symptom: "Pod Pending — FailedScheduling: 0/1 nodes available (Insufficient cpu/memory)"
+  signals:
+    - "requests: cpu=500, memory=500Gi (far above node)"
+    - "describe: FailedScheduling 0/1 nodes ... Insufficient cpu, 1 Insufficient memory"
+  root_cause: "workload requests exceed node allocatable resources (no taints involved)"
+  fix: "reduce requests, or scale/add nodes; never assume it's taints without checking"
+  verification: "VERIFIED (verification-report.md §1.5)"
+  tags: [pending, scheduling, resources]
+
+- id: case-verify-005
+  recorded_at: 2026-08-16T00:00:00Z
+  symptom: "Service unreachable from pod; endpoints have IPs and ready"
+  signals:
+    - "endpoints: 1 ready IP (10.244.0.20:8080)"
+    - "HTTP call: context deadline exceeded (timeout)"
+    - "netpol deny-web-ingress: PodSelector app=web, Ingress policy"
+  root_cause: "NetworkPolicy denied ingress from client (not selector, not DNS, not CNI)"
+  fix: "adjust policy selector/ports; verify with policy restored (not just removed)"
+  verification: "VERIFIED (verification-report.md §1.3, §4)"
+  tags: [network, netpol, service]
+
+# ---- demo：社区常见故障模式（未在本环境验证，作为格式样例） ----
 
 - id: case-demo-001
-  recorded_at: 2026-08-16T00:00:00Z  # 示例占位时间戳
+  recorded_at: 2026-08-16T00:00:00Z
   symptom: "pod CrashLoopBackOff after image tag moved from v1.2.0 to :latest"
   signals:
     - "restartCount=12"
@@ -13,29 +76,5 @@
     - "events: BackOff"
   root_cause: "unpinned :latest tag pulled a breaking change; required config not mounted"
   fix: "pin image digest; add config volume; rollout restart"
-  verification: "pending  # 示例条目，待真实验证"
+  verification: "demo (community pattern — validate in your environment)"
   tags: [crashloop, image-tag, config]
-
-- id: case-demo-002
-  recorded_at: 2026-08-16T00:00:00Z
-  symptom: "container OOMKilled every ~30 min, restart loop"
-  signals:
-    - "lastState.terminated.reason=OOMKilled"
-    - "kubectl top pod usage ≈ limit for hours"
-    - "events: OOMKilling"
-  root_cause: "memory limit set too low for steady-state usage"
-  fix: "raise memory limit with headroom; monitor trend for leak"
-  verification: "pending  # 示例条目，待真实验证"
-  tags: [oom, memory-limit]
-
-- id: case-demo-003
-  recorded_at: 2026-08-16T00:00:00Z
-  symptom: "service unreachable from pod, but endpoints show IPs"
-  signals:
-    - "endpoints: 2 IPs, all ready"
-    - "nslookup from pod resolves"
-    - "NetworkPolicy exists in namespace"
-  root_cause: "NetworkPolicy denied ingress from client pod namespace"
-  fix: "adjust policy selector/ports; re-verify with policy restored (not just removed)"
-  verification: "pending  # 示例条目，待真实验证"
-  tags: [network, netpol, service]
