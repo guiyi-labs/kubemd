@@ -29,6 +29,25 @@ CLI running against a real fault-injected kind cluster (diagnose → 4 findings 
 
 ![KubeMD demo — aiops CLI on a real fault cluster](assets/demo-cli.gif)
 
+Reproduce it yourself in ~60s (needs Docker, kind, and the aiops CLI — or just the skill):
+
+```bash
+# 1) a real broken cluster
+kind create cluster --name kubemd-demo
+kubectl run crash-app --image=nginx:1.25 --command -- sleep 10   # crashes on purpose
+kubectl rollout status deployment/crash-app 2>/dev/null || true
+
+# 2) diagnose it (CLI twin of the skill, same deterministic engine)
+go install github.com/guiyi-labs/aiops-platform/cmd/aiops@latest
+aiops diagnose --namespace default --pod crash-app --period 5   # signals → root cause
+
+# 3) recall the case next time
+aiops cases --query crash-loop
+```
+
+Same loop the skill runs: signals first, hypotheses ranked, fix suggested dry-run.
+
+
 ## What it does
 
 ```
